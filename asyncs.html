@@ -194,7 +194,14 @@
         function downloadFile(url) {
             // Create a new link
             var filename = url.split('/').pop()
-            saveAs(url, filename);
+            try{
+              saveAs(url, filename);
+            }
+            catch(err){
+              console.log(err);
+              // Open it in a new tab 
+              window.open(url, '_blank');
+            }
 
         } 
                
