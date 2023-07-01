@@ -98,9 +98,13 @@
                     const tableHeader = document.createElement('h3');
                     tableHeader.className = "center";
                     const linkElement = document.createElement('a');
-                    linkElement.href = lankyFile;
                     linkElement.textContent = `Async ${asyncNumber}`;
                     linkElement.setAttribute('download', '');
+                    linkElement.href = "#"
+                    linkElement.addEventListener('click', function(event) {
+                      event.preventDefault(); // Prevents the default behavior of navigating to the link
+                      downloadFile(lankyFile); // Call a function to initiate the download
+                    });
                     tableHeader.appendChild(linkElement);
                     container.appendChild(tableHeader);
         
