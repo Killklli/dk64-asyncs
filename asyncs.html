@@ -100,8 +100,9 @@
                     const linkElement = document.createElement('a');
                     linkElement.href = lankyFile;
                     linkElement.textContent = `Async ${asyncNumber}`;
+                    linkElement.setAttribute('download', '');
+                    linkElement.target = '_blank';
                     tableHeader.appendChild(linkElement);
-                    tableHeader.setAttribute('download', '');
                     container.appendChild(tableHeader);
         
                     // Create the collapse/uncollapse button
@@ -172,6 +173,7 @@
                     spoilerLogText.textContent = "Spoiler Log";
                     spoilerLogText.href = spoilerLog;
                     spoilerLogText.setAttribute('download', '');
+                    spoilerLogText.target = '_blank';
                   });
         
                   // If no table definitions are found, display a message indicating no async tables
