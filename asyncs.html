@@ -33,7 +33,7 @@
 <body>
     <h1><a href="/">DK64 Randomizer Asyncs</a> - Leaderboard</h1>
 
-
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
     <script>
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
@@ -101,20 +101,19 @@
                     linkElement.href = lankyFile;
                     linkElement.textContent = `Async ${asyncNumber}`;
                     linkElement.setAttribute('download', '');
-                    linkElement.target = '_blank';
                     tableHeader.appendChild(linkElement);
                     container.appendChild(tableHeader);
         
                     // Create the collapse/uncollapse button
                     const toggleButton = document.createElement('button');
-                    toggleButton.textContent = "Collapse";
+                    toggleButton.textContent = "Show Results";
                     toggleButton.className = "center";
                     toggleButton.addEventListener('click', () => {
                       const table = document.getElementById(`async${asyncNumber}-table`);
                       const spoilerLogContainer = document.getElementById(`async${asyncNumber}-spoiler-log-container`);
                       table.classList.toggle('collapsed');
                       spoilerLogContainer.style.display = table.classList.contains('collapsed') ? 'none' : 'block';
-                      toggleButton.textContent = table.classList.contains('collapsed') ? 'Expand' : 'Collapse';
+                      toggleButton.textContent = table.classList.contains('collapsed') ? 'Show Results' : 'Hide Results';
                     });
                     container.appendChild(toggleButton);
         
@@ -171,9 +170,12 @@
                     const spoilerLogText = document.createElement('a');
                     spoilerLogContainer.appendChild(spoilerLogText);
                     spoilerLogText.textContent = "Spoiler Log";
-                    spoilerLogText.href = spoilerLog;
                     spoilerLogText.setAttribute('download', '');
-                    spoilerLogText.target = '_blank';
+                    spoilerLogText.href = "#"
+                    spoilerLogText.addEventListener('click', function(event) {
+                      event.preventDefault(); // Prevents the default behavior of navigating to the link
+                      downloadFile(spoilerLog); // Call a function to initiate the download
+                    });
                   });
         
                   // If no table definitions are found, display a message indicating no async tables
@@ -185,7 +187,13 @@
                 });
             });
         }
-              
+        function downloadFile(url) {
+            // Create a new link
+            var filename = url.split('/').pop()
+            saveAs(url, filename);
+
+        } 
+               
     </script>
 
 </body>
