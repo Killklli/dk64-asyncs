@@ -30,7 +30,7 @@ body {
     margin: auto;
     margin-top: 50px;
     margin-bottom: 10vmin;
-    max-width: min(98%, 45em);
+    max-width: 75%;
     overflow-wrap: break-word;
     overflow-y: scroll;
 }
@@ -71,7 +71,7 @@ td:last-child {
 
 .centerHoriz {
     margin: auto;
-    width: min(100%, 45em);
+    width: 100%;
 }
 
 .categoryLink {

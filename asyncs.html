@@ -35,182 +35,213 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
     <script>
-        const queryString = window.location.search;
-        const urlParams = new URLSearchParams(queryString);
-        const category = urlParams.get('category');
-        
-        if (!category) {
-          document.body.innerHTML = "<p>No category specified.</p>";
-        } else {
-            document.body.innerHTML += `
-            <h2 class="reduceTopMargin">${category}</h2>
-            <div class="button-container center">
-                <a href="https://forms.gle/EYLMLj6oKMA26cHQ7" target="_blank">
-                    <button>Submit a run HERE</button>
-                </a>
-            </div>
-            <div class="button-container center">
-              <a href="https://github.com/2dos/DK64-Randomizer/wiki/Season-2-Preset-Settings-and-Rules">Link to Rules</a>
-            </div>
-          `;          
-        
-          fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9G_ermgqSFR2T930Y4WK6B9C-FXjCuRZhw1To13DUtgfxGHzhZwXZQXWvbN-0uu1xTT2eqtZ7v4CL/pub?output=csv&gid=1429282649')
-            .then(response => response.text())
-            .then(data => {
-              const rows = data.split('\n').slice(1); // Exclude header row
-              const validRows = rows.filter(row => row.trim() !== ''); // Exclude empty rows
-              const sortedRows = validRows
-                .map(row => row.split(','))
-                .filter(row => row[5] === category) // Filter rows based on category
-                .sort((a, b) => {
-                  const timeA = a[3];
-                  const timeB = b[3];
-                  return new Date('1970/01/01 ' + timeA) - new Date('1970/01/01 ' + timeB);
-                });
-        
-              fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9G_ermgqSFR2T930Y4WK6B9C-FXjCuRZhw1To13DUtgfxGHzhZwXZQXWvbN-0uu1xTT2eqtZ7v4CL/pub?output=csv&gid=1648067764') // Fetch the second CSV file for table definitions
-                .then(response => response.text())
-                .then(tableData => {
-                  const tableRows = tableData.split('\n').slice(1); // Exclude header row
-                  const validTableRows = tableRows.filter(row => row.trim() !== ''); // Exclude empty rows
-                  const tableDefinitions = validTableRows.map(row => row.split(',')); // Split table rows into arrays
-        
-                  const filteredTableDefinitions = tableDefinitions.filter(tableDef => tableDef[1] === category); // Filter table definitions based on category
-        
-                  filteredTableDefinitions.forEach(tableDef => {
-                    const [asyncNumber, _, lankyFile, spoilerLog] = tableDef; // Extract async number and lanky file from table definition
-        
-                    // Filter rows for the current async_number
-                    const rowsForAsyncNumber = sortedRows.filter(row => row[2] == asyncNumber); // Update the comparison here
-        
-                    const tableContainer = document.createElement('div');
-                    tableContainer.style.display = 'flex';
-                    tableContainer.style.flexDirection = 'column';
-                    tableContainer.style.alignItems = 'center';
-                    document.body.appendChild(tableContainer);
-        
-                    // Create the container for table, spoiler log, download button, and collapse button
-                    const container = document.createElement('div');
-                    container.style.display = 'flex';
-                    container.style.flexDirection = 'column';
-                    container.style.alignItems = 'center';
-                    container.style.marginBottom = '10px';
-                    tableContainer.appendChild(container);
-        
-                    // Create the table header with link
-                    const tableHeader = document.createElement('h3');
-                    tableHeader.className = "center";
-                    const linkElement = document.createElement('a');
-                    linkElement.textContent = `Async ${asyncNumber}`;
-                    linkElement.setAttribute('download', '');
-                    linkElement.href = "#"
-                    linkElement.addEventListener('click', function(event) {
-                      event.preventDefault(); // Prevents the default behavior of navigating to the link
-                      downloadFile(lankyFile); // Call a function to initiate the download
-                    });
-                    tableHeader.appendChild(linkElement);
-                    container.appendChild(tableHeader);
-        
-                    // Create the collapse/uncollapse button
-                    const toggleButton = document.createElement('button');
-                    toggleButton.textContent = "Show Results";
-                    toggleButton.className = "center";
-                    toggleButton.addEventListener('click', () => {
-                      const table = document.getElementById(`async${asyncNumber}-table`);
-                      const spoilerLogContainer = document.getElementById(`async${asyncNumber}-spoiler-log-container`);
-                      table.classList.toggle('collapsed');
-                      spoilerLogContainer.style.display = table.classList.contains('collapsed') ? 'none' : 'block';
-                      toggleButton.textContent = table.classList.contains('collapsed') ? 'Show Results' : 'Hide Results';
-                    });
-                    container.appendChild(toggleButton);
-        
-                    // Create the table
-                    const table = document.createElement('table');
-                    table.id = `async${asyncNumber}-table`;
-                    table.className = "categoryBoard centerHoriz collapsed"; // Add "collapsed" class to initially hide the table
-                    tableContainer.appendChild(table);
-        
-                    // Create the table headers
-                    const tableHead = document.createElement('thead');
-                    const headerRow = document.createElement('tr');
-                    const headers = ['Rank', 'Name', 'Time', 'Date', "Comment"];
-                    headers.forEach(headerText => {
-                      const th = document.createElement('th');
-                      th.textContent = headerText;
-                      headerRow.appendChild(th);
-                    });
-                    tableHead.appendChild(headerRow);
-                    table.appendChild(tableHead);
-        
-                    // Create the table body and populate the rows
-                    const tableBody = document.createElement('tbody');
-                    if (rowsForAsyncNumber.length > 0) {
-                      rowsForAsyncNumber.forEach((row, rowIndex) => {
-                        const [runId, runnerName, asyncNumber, duration, link, category, description, date] = row;
-                        const tableRow = document.createElement('tr');
-                        tableRow.innerHTML = `
-                          <td style="text-align: left;">${rowIndex + 1}</td>
-                          <td style="text-align: left;">${runnerName}</td>
-                          <td style="text-align: left;">${link.startsWith('https') ? `<a href="${link}" target="_blank">${duration}</a>` : duration}</td>
-                          <td style="text-align: left;">${date}</td>
-                          <td style="text-align: left;">${description}</td>
-                        `;
-                        tableBody.appendChild(tableRow);
-                      });
-                    } else {
-                      // Create a dummy table row indicating no runners
-                      const dummyRow = document.createElement('tr');
-                      dummyRow.innerHTML = `
-                        <td colspan="4" style="text-align: center;">No runners attempted yet</td>
-                      `;
-                      tableBody.appendChild(dummyRow);
+      const queryString = window.location.search;
+      const urlParams = new URLSearchParams(queryString);
+      const category = urlParams.get('category');
+    
+      if (!category) {
+        document.body.innerHTML = "<p>No category specified.</p>";
+      } else {
+        document.body.innerHTML += `
+          <h2 class="reduceTopMargin">${category}</h2>
+          <div class="button-container center">
+            <a href="https://forms.gle/EYLMLj6oKMA26cHQ7" target="_blank">
+              <button>Submit a run HERE</button>
+            </a>
+          </div>
+          <div class="button-container center">
+            <a href="https://github.com/2dos/DK64-Randomizer/wiki/Season-2-Preset-Settings-and-Rules">Link to Rules</a>
+          </div>
+        `;
+    
+        fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9G_ermgqSFR2T930Y4WK6B9C-FXjCuRZhw1To13DUtgfxGHzhZwXZQXWvbN-0uu1xTT2eqtZ7v4CL/pub?output=csv&gid=1429282649')
+          .then(response => response.text())
+          .then(data => {
+            const rows = data.split('\n').slice(1); // Exclude header row
+            const validRows = rows.filter(row => row.trim() !== ''); // Exclude empty rows
+            const sortedRows = validRows
+              .map(row => {
+                const columns = row.split(',');
+                const modifiedColumns = [];
+                let isInQuote = false;
+                let mergedColumn = '';
+    
+                columns.forEach(column => {
+                  if (isInQuote) {
+                    mergedColumn += ',' + column;
+                    if (column.endsWith('"')) {
+                      modifiedColumns.push(mergedColumn.slice(1, -1));
+                      isInQuote = false;
+                      mergedColumn = '';
                     }
-        
-                    table.appendChild(tableBody);
-
-                    // Create the spoiler log container
-                    const spoilerLogContainer = document.createElement('div');
-                    spoilerLogContainer.style.display = 'none';
-                    spoilerLogContainer.id = `async${asyncNumber}-spoiler-log-container`;
-                    tableContainer.appendChild(spoilerLogContainer);
-        
-                    // Create the spoiler log text
-                    const spoilerLogText = document.createElement('a');
-                    spoilerLogContainer.appendChild(spoilerLogText);
-                    spoilerLogText.textContent = "Spoiler Log";
-                    spoilerLogText.setAttribute('download', '');
-                    spoilerLogText.href = "#"
-                    spoilerLogText.addEventListener('click', function(event) {
-                      event.preventDefault(); // Prevents the default behavior of navigating to the link
-                      downloadFile(spoilerLog); // Call a function to initiate the download
-                    });
-                  });
-        
-                  // If no table definitions are found, display a message indicating no async tables
-                  if (filteredTableDefinitions.length === 0) {
-                    const noAsyncTablesMsg = document.createElement('p');
-                    noAsyncTablesMsg.textContent = 'No async tables found.';
-                    tableContainer.appendChild(noAsyncTablesMsg);
+                  } else if (column.startsWith('"')) {
+                    mergedColumn = column;
+                    if (column.endsWith('"')) {
+                      modifiedColumns.push(mergedColumn.slice(1, -1));
+                      mergedColumn = '';
+                    } else {
+                      isInQuote = true;
+                    }
+                  } else {
+                    modifiedColumns.push(column);
                   }
                 });
-            });
-        }
-        function downloadFile(url) {
-            // Create a new link
-            var filename = url.split('/').pop()
-            try{
-              saveAs(url, filename);
-            }
-            catch(err){
-              console.log(err);
-              // Open it in a new tab 
-              window.open(url, '_blank');
-            }
-
-        } 
-               
+    
+                return modifiedColumns;
+              })
+              .filter(row => row[5] === category) // Filter rows based on category
+              .sort((a, b) => {
+                const timeA = a[3];
+                const timeB = b[3];
+                return new Date(`1970/01/01 ${timeA}`) - new Date(`1970/01/01 ${timeB}`);
+              });
+    
+            fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9G_ermgqSFR2T930Y4WK6B9C-FXjCuRZhw1To13DUtgfxGHzhZwXZQXWvbN-0uu1xTT2eqtZ7v4CL/pub?output=csv&gid=1648067764') // Fetch the second CSV file for table definitions
+              .then(response => response.text())
+              .then(tableData => {
+                const tableRows = tableData.split('\n').slice(1); // Exclude header row
+                const validTableRows = tableRows.filter(row => row.trim() !== ''); // Exclude empty rows
+                const tableDefinitions = validTableRows.map(row => row.split(',')); // Split table rows into arrays
+    
+                const filteredTableDefinitions = tableDefinitions.filter(tableDef => tableDef[1] === category); // Filter table definitions based on category
+    
+                filteredTableDefinitions.forEach(tableDef => {
+                  const [asyncNumber, _, lankyFile, spoilerLog] = tableDef; // Extract async number and lanky file from table definition
+    
+                  // Filter rows for the current async_number
+                  const rowsForAsyncNumber = sortedRows.filter(row => row[2] == asyncNumber); // Update the comparison here
+    
+                  const tableContainer = document.createElement('div');
+                  tableContainer.style.display = 'flex';
+                  tableContainer.style.flexDirection = 'column';
+                  tableContainer.style.alignItems = 'center';
+                  document.body.appendChild(tableContainer);
+    
+                  // Create the container for table, spoiler log, download button, and collapse button
+                  const container = document.createElement('div');
+                  container.style.display = 'flex';
+                  container.style.flexDirection = 'column';
+                  container.style.alignItems = 'center';
+                  container.style.marginBottom = '10px';
+                  tableContainer.appendChild(container);
+    
+                  // Create the table header with link
+                  const tableHeader = document.createElement('h3');
+                  tableHeader.className = 'center';
+                  const linkElement = document.createElement('a');
+                  linkElement.textContent = `Async ${asyncNumber}`;
+                  linkElement.setAttribute('download', '');
+                  linkElement.href = '#';
+                  linkElement.addEventListener('click', function (event) {
+                    event.preventDefault(); // Prevents the default behavior of navigating to the link
+                    downloadFile(lankyFile); // Call a function to initiate the download
+                  });
+                  tableHeader.appendChild(linkElement);
+                  container.appendChild(tableHeader);
+    
+                  // Create the collapse/uncollapse button
+                  const toggleButton = document.createElement('button');
+                  toggleButton.textContent = 'Show Results';
+                  toggleButton.className = 'center';
+                  toggleButton.addEventListener('click', () => {
+                    const table = document.getElementById(`async${asyncNumber}-table`);
+                    const spoilerLogContainer = document.getElementById(`async${asyncNumber}-spoiler-log-container`);
+                    table.classList.toggle('collapsed');
+                    spoilerLogContainer.style.display = table.classList.contains('collapsed') ? 'none' : 'block';
+                    toggleButton.textContent = table.classList.contains('collapsed') ? 'Show Results' : 'Hide Results';
+                  });
+                  container.appendChild(toggleButton);
+    
+                  // Create the table
+                  const table = document.createElement('table');
+                  table.id = `async${asyncNumber}-table`;
+                  table.className = 'categoryBoard centerHoriz collapsed'; // Add "collapsed" class to initially hide the table
+                  tableContainer.appendChild(table);
+    
+                  // Create the table headers
+                  const tableHead = document.createElement('thead');
+                  const headerRow = document.createElement('tr');
+                  const headers = ['Rank', 'Name', 'Time', 'Date', 'Comment'];
+                  headers.forEach(headerText => {
+                    const th = document.createElement('th');
+                    th.textContent = headerText;
+                    if (headerText === 'Comment') {
+                      th.width = '40%';
+                    }
+                    else if (headerText === "Rank"){
+                      th.width = '5%';
+                    }
+                    else{
+                      th.width = '10%';
+                    }
+                    headerRow.appendChild(th);
+                  });
+                  tableHead.appendChild(headerRow);
+                  table.appendChild(tableHead);
+    
+                  // Create the table body and populate the rows
+                  const tableBody = document.createElement('tbody');
+                  if (rowsForAsyncNumber.length > 0) {
+                    rowsForAsyncNumber.forEach((row, rowIndex) => {
+                      const [runId, runnerName, asyncNumber, duration, link, category, description, date] = row;
+                      const tableRow = document.createElement('tr');
+                      tableRow.innerHTML = `
+                        <td style="text-align: left;">${rowIndex + 1}</td>
+                        <td style="text-align: left;">${runnerName}</td>
+                        <td style="text-align: center;">${duration}</td>
+                        <td style="text-align: center;">${date}</td>
+                        <td style="text-align: left;">${description}</td>
+                      `;
+                      tableBody.appendChild(tableRow);
+                    });
+                  } else {
+                    const noResultsRow = document.createElement('tr');
+                    const noResultsCell = document.createElement('td');
+                    noResultsCell.setAttribute('colspan', '5');
+                    noResultsCell.textContent = 'No results available';
+                    noResultsRow.appendChild(noResultsCell);
+                    tableBody.appendChild(noResultsRow);
+                  }
+                  table.appendChild(tableBody);
+    
+                  // Create the spoiler log container and link
+                  const spoilerLogContainer = document.createElement('div');
+                  spoilerLogContainer.id = `async${asyncNumber}-spoiler-log-container`;
+                  spoilerLogContainer.style.display = 'none';
+                  tableContainer.appendChild(spoilerLogContainer);
+    
+                  const spoilerLogHeader = document.createElement('h4');
+                  spoilerLogHeader.className = 'center';
+                  spoilerLogHeader.textContent = 'Spoiler Log:';
+                  spoilerLogContainer.appendChild(spoilerLogHeader);
+    
+                  const spoilerLogLink = document.createElement('a');
+                  spoilerLogLink.className = 'center';
+                  spoilerLogLink.textContent = 'Download Spoiler Log';
+                  spoilerLogLink.setAttribute('download', '');
+                  spoilerLogLink.href = '#';
+                  spoilerLogLink.addEventListener('click', function (event) {
+                    event.preventDefault();
+                    downloadFile(spoilerLog);
+                  });
+                  spoilerLogContainer.appendChild(spoilerLogLink);
+                });
+              });
+          })
+          .catch(error => {
+            console.log('Error:', error);
+            document.body.innerHTML = "<p>An error occurred while fetching the data.</p>";
+          });
+      }
+    
+      function downloadFile(fileUrl) {
+        const link = document.createElement('a');
+        link.href = fileUrl;
+        link.setAttribute('download', '');
+        link.click();
+      }
     </script>
-
+    
 </body>
 
 </html>
