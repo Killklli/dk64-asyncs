@@ -185,13 +185,34 @@
                     rowsForAsyncNumber.forEach((row, rowIndex) => {
                       const [runId, runnerName, asyncNumber, duration, link, category, description, date] = row;
                       const tableRow = document.createElement('tr');
+                      let descriptionContent = description;
+                      let showExpandButton = false;
+
+                      if (description.length > 120) {
+                        descriptionContent = description.slice(0, 120) + '...';
+                        showExpandButton = true;
+                      }
+
+                      const descriptionCell = document.createElement('td');
+                      if (showExpandButton) {
+                        const expandButton = document.createElement('button');
+                        expandButton.textContent = 'Expand';
+                        expandButton.addEventListener('click', () => {
+                          descriptionCell.innerHTML = description;
+                        });
+                        descriptionCell.textContent = descriptionContent;
+                        descriptionCell.appendChild(expandButton);
+                      } else {
+                        descriptionCell.textContent = descriptionContent;
+                      }
+
                       tableRow.innerHTML = `
                         <td style="text-align: left;">${rowIndex + 1}</td>
                         <td style="text-align: left;">${runnerName}</td>
                         <td style="text-align: center;"><a href="${link}" target="_blank">${duration}</a></td>
                         <td style="text-align: center;">${date}</td>
-                        <td style="text-align: left;">${description}</td>
                       `;
+                      tableRow.appendChild(descriptionCell);
                       tableBody.appendChild(tableRow);
                     });
                   } else {
