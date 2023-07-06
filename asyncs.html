@@ -187,12 +187,12 @@
                       const tableRow = document.createElement('tr');
                       let descriptionContent = description;
                       let showExpandButton = false;
-
+                  
                       if (description.length > 120) {
                         descriptionContent = description.slice(0, 120) + '...';
                         showExpandButton = true;
                       }
-
+                  
                       const descriptionCell = document.createElement('td');
                       if (showExpandButton) {
                         const expandButton = document.createElement('button');
@@ -205,16 +205,26 @@
                       } else {
                         descriptionCell.textContent = descriptionContent;
                       }
-
+                  
+                      const linkCell = document.createElement('td');
+                      if (link !== '') {
+                        const linkElement = document.createElement('a');
+                        linkElement.href = link;
+                        linkElement.target = '_blank';
+                        linkElement.textContent = duration;
+                        linkCell.appendChild(linkElement);
+                      } else {
+                        linkCell.textContent = duration;
+                      }
                       tableRow.innerHTML = `
                         <td style="text-align: left;">${rowIndex + 1}</td>
                         <td style="text-align: left;">${runnerName}</td>
-                        <td style="text-align: center;"><a href="${link}" target="_blank">${duration}</a></td>
+                        <td style="text-align: center;">${linkCell.innerHTML}</td>
                         <td style="text-align: center;">${date}</td>
                       `;
                       tableRow.appendChild(descriptionCell);
                       tableBody.appendChild(tableRow);
-                    });
+                    });         
                   } else {
                     const noResultsRow = document.createElement('tr');
                     const noResultsCell = document.createElement('td');
