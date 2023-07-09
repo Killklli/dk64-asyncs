@@ -184,6 +184,14 @@
                   if (rowsForAsyncNumber.length > 0) {
                     rowsForAsyncNumber.forEach((row, rowIndex) => {
                       const [runId, runnerName, asyncNumber, duration, link, category, description, date] = row;
+                      // Convert duration to seconds
+                      const durationInSeconds = convertDurationToSeconds(duration);
+
+                      // Skip rows with duration over 30 hours (108000 seconds)
+                      if (durationInSeconds > 108000) {
+                        return;
+                      }
+
                       const tableRow = document.createElement('tr');
                       let descriptionContent = description;
                       let showExpandButton = false;
@@ -270,6 +278,10 @@
         link.href = fileUrl;
         link.setAttribute('download', '');
         link.click();
+      }
+      function convertDurationToSeconds(duration) {
+        const [hours, minutes, seconds] = duration.split(':');
+        return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
       }
     </script>
     
