@@ -93,7 +93,16 @@
             .sort((a, b) => {
               const timeA = a[3];
               const timeB = b[3];
-              return new Date(`1970/01/01 ${timeA}`) - new Date(`1970/01/01 ${timeB}`);
+              const [hoursA, minutesA, secondsA] = timeA.split(':').map(Number);
+              const [hoursB, minutesB, secondsB] = timeB.split(':').map(Number);
+      
+              if (hoursA !== hoursB) {
+                return hoursA - hoursB;
+              } else if (minutesA !== minutesB) {
+                return minutesA - minutesB;
+              } else {
+                return secondsA - secondsB;
+              }
             });
       
           fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9G_ermgqSFR2T930Y4WK6B9C-FXjCuRZhw1To13DUtgfxGHzhZwXZQXWvbN-0uu1xTT2eqtZ7v4CL/pub?output=csv&gid=1648067764') // Fetch the second CSV file for table definitions
