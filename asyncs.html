@@ -1,11 +1,23 @@
 <!DOCTYPE html>
-<html lang="en">
-
-<head>
+<html lang="en" data-bs-theme="dark">
+  <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DK64 Randomizer Asyncs - Leaderboard</title>
+
+    <meta property="og:title" content="DK64 Randomizer Asyncs - Speedruns Leaderboard" />
+    <meta property="og:type" content="website" />
+    <meta property="og:description" content="If you plan on Streaming an Async, be courteous and just mention it in your Stream title just so others know!" />
+    <meta property="og:url" content="async.dk64randomizer.com" />
+    <meta property="og:image" content="https://async.dk64randomizer.com/assets/img/logo.png" />
+    <meta property="og:image:secure_url" content="https://async.dk64randomizer.com/assets/img/logo.png" />
+    <meta property="og:image:alt" content="DK64Randomizer.com" />
+
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    
 
     <link rel="stylesheet" href="../../css/style.css">
     <link rel="icon" href="../../assets/img/logo.png">
@@ -28,32 +40,144 @@
             margin-right: 5px;
         }
     </style>
-</head>
-
-<body>
-    <h1><a href="/">DK64 Randomizer Asyncs</a> - Leaderboard</h1>
+  </head>
+  <body>
+    <div class="text-center">
+      <a href="/">
+        <img src="./assets/img/logo.png" width="250px"/>
+      </a>
+    </div>
+    <h1>Leaderboard</h1>
+    <!-- Head Actions -->
+    <div id="leaderboard-actions" class="d-flex justify-content-end" hidden>
+      <div class="bg-dark ps-2 py-2" style="border-top-left-radius:10px">
+        <button class="btn btn-secondary" href="https://forms.gle/EYLMLj6oKMA26cHQ7" target="_blank">
+          <i class="fa-solid fa-plus"></i> Submit time
+        </button>
+      </div>
+      <div class="bg-dark px-2 pt-2" style="border-top-right-radius:10px">
+        <button class="btn btn-secondary" href="https://github.com/2dos/DK64-Randomizer/wiki/Season-2-Preset-Settings-and-Rules" target="_blank">
+          <i class="fa-solid fa-scroll"></i> Rules
+        </button>
+      </div>
+    </div>
+    <div class="card bg-dark p-2" style="border-top-right-radius:0px">
+      <div id="response" class="text-center">Loading Leaderboard...</div>
+      <!-- Leaderboard -->
+      <div id="leaderboard" hidden>
+        <h2 id="leaderboard-category" class="text-start mb-0"></h2>
+        <div class="small" id="leaderboard-time-count"></div>
+        <ul class="nav nav-underline" id="async-list"></ul>
+        <div id="async-data-container" hidden>
+          <div class="d-flex">
+            <div class="p-2">
+              <button class="btn btn-secondary" onclick="downloadHandler('lanky')">
+                <i class="fa-solid fa-file-arrow-down"></i> Seed
+              </button>
+            </div>
+            <div class="p-2">
+              <button class="btn btn-secondary" onclick="downloadHandler('spoiler')">
+                <i class="fa-solid fa-file-arrow-down"></i> Spoiler Log
+              </button>
+            </div>
+            <div class="p-2" id="leaderboard-show-times">
+              <button class="btn btn-secondary" onclick="showTableHandler()">
+                Show Times
+              </button>
+            </div>
+          </div>
+          <div id="leaderboard-times" hidden>
+            <table class="table table-striped table-hover table-bordered">
+              <thead>
+                <tr>
+                  <th>Rank</th>
+                  <th>Name</th>
+                  <th>Time</th>
+                  <th>Date</th>
+                  <th>Comment</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-results"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>
     <script>
       const queryString = window.location.search;
       const urlParams = new URLSearchParams(queryString);
       const category = urlParams.get('category');
-    
-      if (!category) {
-        document.body.innerHTML = "<p>No category specified.</p>";
-      } else {
-        document.body.innerHTML += `
-          <h2 class="reduceTopMargin">${category}</h2>
-          <div class="button-container center">
-            <a href="https://forms.gle/EYLMLj6oKMA26cHQ7" target="_blank">
-              <button>Submit a run HERE</button>
-            </a>
-          </div>
-          <div class="button-container center">
-            <a href="https://github.com/2dos/DK64-Randomizer/wiki/Season-2-Preset-Settings-and-Rules">Link to Rules</a>
+      let lanky_files = {}
+      let spoiler_files = {}
+      let async_times = {}
+
+      function downloadAsyncFile(async_name, file_type) {
+        // Call a function to initiate the download
+        if (async_name == null) {
+          return;
+        }
+        if (file_type == "lanky") {
+          downloadFile(lanky_files[async_name]);
+        } else if (file_type == "spoiler") {
+          downloadFile(spoiler_files[async_name]);
+        }
+      }
+
+      function displayError(txt) {
+        document.getElementById("response").innerHTML = `
+          <div class="d-flex justify-content-center">
+            <div class="card bg-danger p-2">
+              <div class="mb-2" style="border-bottom: 1px solid #db8c91">An error occurred while fetching the data</div>
+              <div class="text-start">${txt}</div>
+            </div>
           </div>
         `;
+      }
+
+      function getAsyncName() {
+        const nav_hook = document.getElementById("async-list");
+        const a_els = nav_hook.getElementsByTagName("a");
+        for (let i = 0; i < a_els.length; i++) {
+          if (a_els[i].classList.contains("active")) {
+            return a_els[i].innerText;
+          }
+        }
+        return null;
+      }
+
+      function downloadHandler(file_type) {
+        downloadAsyncFile(getAsyncName(), file_type);
+      }
+
+      function showTable(async_name) {
+        if (async_name == null) {
+          return;
+        }
+        document.getElementById("leaderboard-times").removeAttribute("hidden");
+        const tbody_hook = document.getElementById("leaderboard-results");
+        tbody_hook.innerHTML = async_times[async_name].map(t_data => `
+          <tr>
+            <td>${t_data.rank}</td>
+            <td><a href="./players.html?player=${encodeURI(t_data.runner)}">${t_data.runner}</a></td>
+            <td>
+              ${t_data.link ? `<a href="${t_data.link}">${t_data.time}</a>` : t_data.time}
+            </td>
+            <td>${t_data.date}</td>
+            <td>${t_data.comment}</td>
+          </tr>
+        `).join("")
+      }
+
+      function showTableHandler() {
+        showTable(getAsyncName());
+      }
     
+      if (!category) {
+        document.getElementById("response").innerText = "No category specified.";
+      } else {
+        document.getElementById("response").innerText = "Found Leaderboard. Loading...";
         fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9G_ermgqSFR2T930Y4WK6B9C-FXjCuRZhw1To13DUtgfxGHzhZwXZQXWvbN-0uu1xTT2eqtZ7v4CL/pub?output=csv&gid=1429282649')
         .then(response => response.text())
         .then(data => {
@@ -112,173 +236,83 @@
               const validTableRows = tableRows.filter(row => row.trim() !== ''); // Exclude empty rows
               const tableDefinitions = validTableRows.map(row => row.split(',')); // Split table rows into arrays
       
-                const filteredTableDefinitions = tableDefinitions.filter(tableDef => tableDef[1] === category); // Filter table definitions based on category
-    
-                filteredTableDefinitions.forEach(tableDef => {
-                  const [asyncNumber, _, lankyFile, spoilerLog] = tableDef; // Extract async number and lanky file from table definition
-    
-                  // Filter rows for the current async_number
-                  const rowsForAsyncNumber = sortedRows.filter(row => row[2] == asyncNumber); // Update the comparison here
-    
-                  const tableContainer = document.createElement('div');
-                  tableContainer.style.display = 'flex';
-                  tableContainer.style.flexDirection = 'column';
-                  tableContainer.style.alignItems = 'center';
-                  document.body.appendChild(tableContainer);
-    
-                  // Create the container for table, spoiler log, download button, and collapse button
-                  const container = document.createElement('div');
-                  container.style.display = 'flex';
-                  container.style.flexDirection = 'column';
-                  container.style.alignItems = 'center';
-                  container.style.marginBottom = '10px';
-                  tableContainer.appendChild(container);
-    
-                  // Create the table header with link
-                  const tableHeader = document.createElement('h3');
-                  tableHeader.className = 'center';
-                  const linkElement = document.createElement('a');
-                  linkElement.textContent = `Async ${asyncNumber}`;
-                  linkElement.setAttribute('download', '');
-                  linkElement.href = '#';
-                  linkElement.addEventListener('click', function (event) {
-                    event.preventDefault(); // Prevents the default behavior of navigating to the link
-                    downloadFile(lankyFile); // Call a function to initiate the download
-                  });
-                  tableHeader.appendChild(linkElement);
-                  container.appendChild(tableHeader);
-    
-                  // Create the collapse/uncollapse button
-                  const toggleButton = document.createElement('button');
-                  toggleButton.textContent = 'Show Results';
-                  toggleButton.className = 'center';
-                  toggleButton.addEventListener('click', () => {
-                    const table = document.getElementById(`async${asyncNumber}-table`);
-                    const spoilerLogContainer = document.getElementById(`async${asyncNumber}-spoiler-log-container`);
-                    table.classList.toggle('collapsed');
-                    spoilerLogContainer.style.display = table.classList.contains('collapsed') ? 'none' : 'block';
-                    toggleButton.textContent = table.classList.contains('collapsed') ? 'Show Results' : 'Hide Results';
-                  });
-                  container.appendChild(toggleButton);
-    
-                  // Create the table
-                  const table = document.createElement('table');
-                  table.id = `async${asyncNumber}-table`;
-                  table.className = 'categoryBoard centerHoriz collapsed'; // Add "collapsed" class to initially hide the table
-                  tableContainer.appendChild(table);
-    
-                  // Create the table headers
-                  const tableHead = document.createElement('thead');
-                  const headerRow = document.createElement('tr');
-                  const headers = ['Rank', 'Name', 'Time', 'Date', 'Comment'];
-                  headers.forEach(headerText => {
-                    const th = document.createElement('th');
-                    th.textContent = headerText;
-                    if (headerText === 'Comment') {
-                      th.width = '40%';
-                    }
-                    else if (headerText === "Rank"){
-                      th.width = '5%';
-                    }
-                    else{
-                      th.width = '10%';
-                    }
-                    headerRow.appendChild(th);
-                  });
-                  tableHead.appendChild(headerRow);
-                  table.appendChild(tableHead);
-    
-                  // Create the table body and populate the rows
-                  const tableBody = document.createElement('tbody');
-                  if (rowsForAsyncNumber.length > 0) {
-                    rowsForAsyncNumber.forEach((row, rowIndex) => {
-                      const [runId, runnerName, asyncNumber, duration, link, category, description, date] = row;
-                      // Convert duration to seconds
-                      const durationInSeconds = convertDurationToSeconds(duration);
+              let total_times = 0;
+              const filteredTableDefinitions = tableDefinitions.filter(tableDef => tableDef[1] === category); // Filter table definitions based on category
+              const nav_hook = document.getElementById("async-list");
 
-                      // Skip rows with duration over 30 hours (108000 seconds)
-                      if (durationInSeconds > 108000) {
-                        return;
-                      }
+              filteredTableDefinitions.forEach((tableDef, global_index) => {
+                const [asyncNumber, _, lankyFile, spoilerLog] = tableDef; // Extract async number and lanky file from table definition
+  
+                // Filter rows for the current async_number
+                const rowsForAsyncNumber = sortedRows.filter(row => row[2] == asyncNumber); // Update the comparison here
+  
+                // Create the table header with link
+                const local_name = `Async ${asyncNumber}`;
+                nav_hook.innerHTML += `<li class="nav-item">
+                  <a class="nav-link" href="#" tabindex="${global_index}">${local_name}</a>
+                </li>`
+                lanky_files[local_name] = lankyFile;
+                async_times[local_name] = [];
+  
+                // Create the table body and populate the rows
+                const tableBody = document.createElement('tbody');
+                if (rowsForAsyncNumber.length > 0) {
+                  rowsForAsyncNumber.forEach((row, rowIndex) => {
+                    const [runId, runnerName, asyncNumber, duration, link, category, description, date] = row;
+                    // Convert duration to seconds
+                    const durationInSeconds = convertDurationToSeconds(duration);
 
-                      const tableRow = document.createElement('tr');
-                      let descriptionContent = description;
-                      let showExpandButton = false;
-                  
-                      if (description.length > 120) {
-                        descriptionContent = description.slice(0, 120) + '...';
-                        showExpandButton = true;
-                      }
-                  
-                      const descriptionCell = document.createElement('td');
-                      if (showExpandButton) {
-                        const expandButton = document.createElement('button');
-                        expandButton.textContent = 'Expand';
-                        expandButton.addEventListener('click', () => {
-                          descriptionCell.innerHTML = description;
-                        });
-                        descriptionCell.textContent = descriptionContent;
-                        descriptionCell.appendChild(expandButton);
-                      } else {
-                        descriptionCell.textContent = descriptionContent;
-                      }
-                  
-                      const linkCell = document.createElement('td');
-                      if (link !== '') {
-                        const linkElement = document.createElement('a');
-                        linkElement.href = link;
-                        linkElement.target = '_blank';
-                        linkElement.textContent = duration;
-                        linkCell.appendChild(linkElement);
-                      } else {
-                        linkCell.textContent = duration;
-                      }
-                      tableRow.innerHTML = `
-                        <td style="text-align: left;">${rowIndex + 1}</td>
-                        <td style="text-align: left;">${runnerName}</td>
-                        <td style="text-align: center;">${linkCell.innerHTML}</td>
-                        <td style="text-align: center;">${date}</td>
-                      `;
-                      tableRow.appendChild(descriptionCell);
-                      tableBody.appendChild(tableRow);
-                    });         
-                  } else {
-                    const noResultsRow = document.createElement('tr');
-                    const noResultsCell = document.createElement('td');
-                    noResultsCell.setAttribute('colspan', '5');
-                    noResultsCell.textContent = 'No results available';
-                    noResultsRow.appendChild(noResultsCell);
-                    tableBody.appendChild(noResultsRow);
-                  }
-                  table.appendChild(tableBody);
-    
-                  // Create the spoiler log container and link
-                  const spoilerLogContainer = document.createElement('div');
-                  spoilerLogContainer.id = `async${asyncNumber}-spoiler-log-container`;
-                  spoilerLogContainer.style.display = 'none';
-                  tableContainer.appendChild(spoilerLogContainer);
-    
-                  const spoilerLogHeader = document.createElement('h4');
-                  spoilerLogHeader.className = 'center';
-                  spoilerLogHeader.textContent = 'Spoiler Log:';
-                  spoilerLogContainer.appendChild(spoilerLogHeader);
-    
-                  const spoilerLogLink = document.createElement('a');
-                  spoilerLogLink.className = 'center';
-                  spoilerLogLink.textContent = 'Download Spoiler Log';
-                  spoilerLogLink.setAttribute('download', '');
-                  spoilerLogLink.href = '#';
-                  spoilerLogLink.addEventListener('click', function (event) {
-                    event.preventDefault();
-                    downloadFile(spoilerLog);
-                  });
-                  spoilerLogContainer.appendChild(spoilerLogLink);
-                });
+                    // Skip rows with duration over 30 hours (108000 seconds)
+                    if (durationInSeconds > 108000) {
+                      return;
+                    }
+
+                    async_times[local_name].push({
+                      "rank": rowIndex + 1,
+                      "runner": runnerName,
+                      "time": duration,
+                      "link": link,
+                      "date": date,
+                      "comment": description, // Condense if over 120 characters
+                    })
+                    total_times += 1;
+                  });         
+                }
+                spoiler_files[local_name] = spoilerLog;
+                document.getElementById("response").setAttribute("hidden", "hidden");
+                document.getElementById("leaderboard").removeAttribute("hidden");
+                document.getElementById("leaderboard-category").innerText = category;
               });
+              const list_items = nav_hook.getElementsByTagName("li");
+              for (let l = 0; l < list_items.length; l++) {
+                list_items[l].addEventListener("click", (e) => {
+                  // Deselect
+                  const l_el = nav_hook.getElementsByTagName("li");
+                  for (let k = 0; k < l_el.length; k++) {
+                    l_el[k].getElementsByTagName("a")[0].classList.remove("active");
+                    l_el[k].getElementsByTagName("a")[0].removeAttribute("aria-current");
+                  }
+                  // Select
+                  e.target.classList.add("active");
+                  e.target.setAttribute("aria-current", "page");
+                  document.getElementById("async-data-container").removeAttribute("hidden");
+                  document.getElementById("leaderboard-times").setAttribute("hidden", "hidden");
+
+                  if (async_times[e.target.innerText].length == 0) {
+                    document.getElementById("leaderboard-show-times").setAttribute("hidden", "hidden");
+                  } else {
+                    document.getElementById("leaderboard-show-times").removeAttribute("hidden");
+                  }
+                })
+              }
+              document.getElementById("leaderboard-time-count").innerText = `${total_times} Time${total_times == 1 ? '' : 's'}`;
+            })
+            .catch(error => {
+              displayError(error);
+            });
           })
           .catch(error => {
-            console.log('Error:', error);
-            document.body.innerHTML = "<p>An error occurred while fetching the data.</p>";
+            displayError(error);
           });
       }
     
@@ -293,7 +327,6 @@
         return parseInt(hours) * 3600 + parseInt(minutes) * 60 + parseInt(seconds);
       }
     </script>
-    
-</body>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script> 
+  </body>
 </html>
